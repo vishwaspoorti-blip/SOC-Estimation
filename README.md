@@ -1,40 +1,5 @@
 # SOC-Estimation
 State of Charge (SOC) is the "fuel gauge" for batteries, representing the energy level relative to capacity. Since charge can't be measured directly, it's estimated using voltage, current, and temperature data. Methods range from Coulomb Counting to Kalman Filters. Accurate SOC is vital for range prediction, safety, and battery longevity in EVs.
-below shown should be added in the command window
-%% --- 1. BATTERY PARAMETERS (Lead-Pb / ECM) ---
-Cn = 10;            % Nominal Capacity (Ah)
-Q = Cn * 3600;      % Capacity in Coulombs (As)
-SOC_init = 0.8;     % Starting at 80% charge
-r = 0.012;          % Internal Resistance (Ohms)
-R0 = 0.012;         % Ohmic Resistance
-R1 = 0.005;         % Polarization Resistance 1
-C1 = 2000;          % Polarization Capacitance 1
-Cx = 1000;          % Diffusion Capacitance
-Rx = 0.01;          % Diffusion Resistance
-C0 = 500;           % Main Capacitance
-m = 0.1;            % OCV-SOC Slope
-E0 = 12.6;          % Full Charge Voltage
-
-%% --- 2. VEHICLE DYNAMICS (For 'dynamique du véhicule' block) ---
-g = 9.81;           % Gravity (m/s^2)
-G = 9.81;           % Duplicate for alternative block names
-M = 1200;           % Vehicle Mass (kg)
-rho = 1.225;        % Air Density (kg/m^3)
-Cd = 0.3;           % Aerodynamic Drag Coefficient
-A = 2.2;            % Frontal Area (m^2)
-Rw = 0.3;           % Wheel Radius (m)
-f = 0.015;          % Rolling Resistance Coefficient
-
-%% --- 3. OBSERVER GAINS (Luenberger, SMC, Super Twisting) ---
-S = 1;              % Sliding Surface Slope
-L = 0.5;            % Luenberger Gain
-lambda = 0.1;       % Sliding Mode Constant
-gamma = 0.05;       % Switching Gain
-k = 1;              % General Gain constant
-k1 = 10;            % Super Twisting Gain 1
-k2 = 5;             % Super Twisting Gain 2
-sigma = 0.05;       % Chattering Reduction Constant
-
-fprintf('All parameters loaded. You can now press RUN in Simulink.\n');
-All parameters loaded. You can now press RUN in Simulink.
->> 
+ Battery SoC Estimation & Vehicle Dynamics SimulationWhat is this project?This project is a Simulink-based testing ground designed to solve one of the trickiest problems in electric vehicle (EV) engineering: accurately guessing how much "juice" is left in a battery. Since we can’t put a physical sensor inside a battery to see the charge, we use mathematical "observers." This model puts three different observers to the test against a real-world driving simulation to see which one performs best under pressure.How it Works1. The "Real World" (Drive Cycle & Physics)Instead of just testing the battery with a flat line of current, we use the FTP75 Drive Cycle. This mimics 2474 seconds of actual city driving—think stop-and-go traffic, highway merging, and braking.The Vehicle Dynamics block takes this speed data and calculates exactly how much torque and power the motor needs.This tells us the Current ($I$) being pulled from the battery at every split second.2. The "Source of Truth" (Battery Model)We have a core Lithium-Ion Battery Model that acts as our benchmark. It provides the "True" State of Charge ($Z$), which we use to check if our observers are actually getting it right. It also tracks terminal voltage ($V_t$) and polarization voltage ($V_p$).3. The "Guessers" (The Observers)This is the heart of the experiment. We’ve implemented three different algorithms to see how they handle the noisy, fast-changing data from a moving car:Luenberger Observer: The "old reliable." It’s a linear approach that’s easy to set up but can struggle with the complex, non-linear nature of batteries.Classic Sliding Mode: A much tougher algorithm. It’s designed to be "robust," meaning it doesn't get confused easily by model errors, though it can sometimes be a bit "jumpy" (chattering).Super Twisting: The high-end version of the Sliding Mode. It provides the same toughness but smooths out the "jumpiness," giving us a cleaner, more accurate estimate.
+ Monitoring & AnalysisThe model is rigged with scopes so you can watch the vehicle speed and power consumption in real-time. The ultimate goal is to compare the True SoC against the Estimated SoC from each of the three observers.The winner is the one that:Converges to the correct value the fastest.Stays accurate even when the driver is aggressive (rapid current changes).Shows the least amount of "noise" or error in its prediction.
+ Quick StartSet up: Make sure your battery parameters (capacity, internal resistance) are matched in the blocks.Run: Hit the play button and let it run for the full cycle.Review: Open the comparison scopes to see which observer’s line tracks the "True $Z$" line most closely.
